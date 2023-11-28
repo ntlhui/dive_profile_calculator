@@ -49,3 +49,11 @@ def test_load_profile():
     profile = DiveProfile.from_dict(data)
     assert math.isclose(profile.gas_pressure, gas_pressure)
     assert math.isclose(profile.gas_volume, gas_volume)
+    segments = profile.get_segments()
+    assert len(segments) == 2
+    assert math.isclose(segments[0].avg_depth, 5)
+    assert math.isclose(segments[1].avg_depth, 5)
+    assert math.isclose(segments[0].avg_consumption, 15)
+    assert math.isclose(segments[1].avg_consumption, 15)
+    assert segments[0].duration.total_seconds() == 60
+    assert segments[1].duration.total_seconds() == 60

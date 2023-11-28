@@ -6,7 +6,8 @@ import datetime as dt
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
-from schema import Schema, Optional, Or
+import numpy as np
+from schema import Optional, Or, Schema
 
 
 @dataclass
@@ -19,6 +20,33 @@ class DiveProfilePoint:
     depth: float # in meters
     timestamp: dt.timedelta
     consumption: float # in liters per minute
+
+@dataclass
+class DiveProfileSegment:
+    """Dive profile segment
+    """
+    avg_depth: float # in meters
+    duration: dt.timedelta
+    avg_consumption: float # in liters per minute
+
+    @classmethod
+    def from_profile_points(cls,
+                            first: DiveProfilePoint,
+                            second: DiveProfilePoint) -> DiveProfileSegment:
+        """Computes the dive segments
+
+        Args:
+            first (DiveProfilePoint): Starting point
+            second (DiveProfilePoint): Ending point
+
+        Returns:
+            DiveProfileSegment: Dive segment
+        """
+        return DiveProfileSegment(
+            avg_depth=np.average([first.depth, second.depth]),
+            duration=second.timestamp - first.timestamp,
+            avg_consumption=np.average([first.consumption, second.consumption])
+        )
 
 @dataclass
 class DiveProfile:
@@ -85,3 +113,12 @@ class DiveProfile:
             water_density=water_density,
             gravity_constant=gravity_constant
         )
+
+    def get_segments(self) -> List[DiveProfileSegment]:
+        """Returns the profile segments
+
+        Returns:
+            List[DiveProfileSegment]: Dive profile segments
+        """
+        return [DiveProfileSegment.from_profile_points(self.profile[idx], self.profile[idx + 1])
+                for idx in range(len(self.profile) - 1)]
