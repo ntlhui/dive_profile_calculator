@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dive_profile_calculator"
-version = "0.0.0"
+version = "0.1.0"
 description = "Software for computing rock bottom and gas consumption for various profiles"
 authors = ["Nathan Hui <ntlhui@gmail.com>"]
 license = "MIT"
