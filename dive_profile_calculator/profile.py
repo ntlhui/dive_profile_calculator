@@ -1,8 +1,12 @@
 '''Dive Profile Descriptor
 '''
+from __future__ import annotations
+
 import datetime as dt
 from dataclasses import dataclass
-from typing import List
+from typing import Any, Dict, List, Union
+
+from schema import Schema, Optional, Or
 
 
 @dataclass
@@ -38,3 +42,46 @@ class DiveProfile:
             float: Hydrostatic pressure in bar
         """
         return (self.water_density * self.gravity_constant * depth) * 1e-5 + 1
+
+    profile_schema = Schema({
+        'gas_volume': Or(float, int),
+        'gas_pressure': Or(float, int),
+        Optional('water_density', default=1023.6): Or(float, int),
+        Optional('gravity_constant', default=9.80665): Or(float, int),
+        'profile': {
+            int: {
+                'depth': Or(float, int),
+                'consumption': Or(float, int)
+            }
+        }
+    })
+    @classmethod
+    def from_dict(cls, data: Any) -> DiveProfile:
+        """Loads profile from dictionary
+
+        Args:
+            data (Any): Dict-like profile data
+
+        Returns:
+            DiveProfile: Initialized dive profile
+        """
+        valid_data: Dict[str, Any] = cls.profile_schema.validate(data)
+        profile_data: Dict[int, Dict[str, Union[float, int]]] = valid_data['profile']
+        gas_volume = float(valid_data['gas_volume'])
+        gas_pressure = float(valid_data['gas_pressure'])
+        water_density = float(valid_data['water_density'])
+        gravity_constant = float(valid_data['gravity_constant'])
+        profile_points: List[DiveProfilePoint] = []
+        profile_points = [DiveProfilePoint(
+            depth=float(point_parameters['depth']),
+            timestamp=dt.timedelta(seconds=profile_timestamp),
+            consumption=float(point_parameters['consumption'])
+        ) for profile_timestamp, point_parameters in profile_data.items()]
+        profile_points = sorted(profile_points, key=lambda x: x.timestamp)
+        return DiveProfile(
+            gas_volume=gas_volume,
+            gas_pressure=gas_pressure,
+            profile=profile_points,
+            water_density=water_density,
+            gravity_constant=gravity_constant
+        )

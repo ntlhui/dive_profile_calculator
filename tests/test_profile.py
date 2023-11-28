@@ -22,3 +22,30 @@ def test_depth_calculation():
     assert math.isclose(profile.ambient_pressure(30), 4.011426082)
     assert math.isclose(profile.ambient_pressure(40), 5.015234776)
     assert math.isclose(profile.ambient_pressure(50), 6.01904347)
+
+def test_load_profile():
+    """Tests loading profiles
+    """
+    gas_pressure = 232
+    gas_volume = 12
+    data = {
+        'gas_volume': gas_volume,
+        'gas_pressure': gas_pressure,
+        'profile': {
+            0: {
+                'depth': 0,
+                'consumption': 15
+            },
+            60: {
+                'depth': 10,
+                'consumption': 15
+            },
+            120: {
+                'depth': 0,
+                'consumption': 15
+            }
+        }
+    }
+    profile = DiveProfile.from_dict(data)
+    assert math.isclose(profile.gas_pressure, gas_pressure)
+    assert math.isclose(profile.gas_volume, gas_volume)
