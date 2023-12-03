@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import math
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
@@ -47,6 +48,16 @@ class DiveProfileSegment:
             duration=second.timestamp - first.timestamp,
             avg_consumption=np.average([first.consumption, second.consumption])
         )
+
+@dataclass
+class DiverConfiguration:
+    """Diver Configuration
+    """
+    gas_volume: float # in l
+    gas_pressure: float # in bar
+    consumption: float = 15 # in l/min
+    water_density: float = 1023.6 # in kg/m^3
+    gravity_constant: float = 9.80665 # m/s^2
 
 @dataclass
 class DiveProfile:
@@ -122,3 +133,76 @@ class DiveProfile:
         """
         return [DiveProfileSegment.from_profile_points(self.profile[idx], self.profile[idx + 1])
                 for idx in range(len(self.profile) - 1)]
+
+    @staticmethod
+    def compute_ssi_ascent(depth: float, configuration: DiverConfiguration) -> List[DiveProfilePoint]:
+        if depth <= 0:
+            raise RuntimeError('Trivial ascent')
+        ascent_rate = 10 # m/min
+        stop_duration = 3 # min
+        stop_depth = 6 # min
+        current_time = dt.timedelta(seconds=0)
+        profile = [DiveProfilePoint(depth=depth,
+                                    timestamp=current_time,
+                                    consumption=configuration.consumption)]
+        
+        # 10 m/min to 6 m
+        current_time += dt.timedelta(minutes=(depth - stop_depth) / ascent_rate)
+        depth = stop_depth
+        profile.append(DiveProfilePoint(depth=depth,
+                                        timestamp=current_time,
+                                        consumption=configuration.consumption))
+
+        # stop
+        current_time += dt.timedelta(minutes=stop_duration)
+        profile.append(DiveProfilePoint(depth=depth,
+                                        timestamp=current_time,
+                                        consumption=configuration.consumption))
+        
+        # ascent to surface
+        current_time += dt.timedelta(minutes=stop_depth / ascent_rate)
+        depth = 0
+        profile.append(DiveProfilePoint(depth=depth,
+                                        timestamp=current_time,
+                                        consumption=configuration.consumption))
+        
+        return profile
+    @staticmethod
+    def compute_gue_ascent(depth: float, configuration: DiverConfiguration) -> List[DiveProfilePoint]:
+        if depth <= 0:
+            raise RuntimeError('Trivial ascent')
+        profile = [DiveProfilePoint(depth,
+                                    timestamp=dt.timedelta(seconds=0),
+                                    consumption=configuration.consumption)]
+        deep_ascent_rate = 10 # m/min
+        shallow_ascent_rate = 6 # m/min
+        stop_duration = 0.5 # min
+        starting_depth = depth
+        start_time = dt.timedelta(seconds=0)
+        current_time = start_time
+        if starting_depth < 3:
+            current_time += dt.timedelta(minutes=starting_depth / shallow_ascent_rate)
+            profile.append(DiveProfilePoint(depth=0,
+                                            timestamp=current_time,
+                                            consumption=configuration.consumption))
+            return profile
+        # Round depth to deeper 3 m
+        depth = np.ceil(depth / 6) * 3. # Half to the deeper 3 m
+        current_time += dt.timedelta(minutes=(starting_depth - depth) / deep_ascent_rate)
+        profile.append(DiveProfilePoint(depth=depth,
+                                        timestamp=current_time,
+                                        consumption=configuration.consumption))
+
+        while depth > 0:
+            # 30 second stop
+            current_time += dt.timedelta(minutes=stop_duration)
+            profile.append(DiveProfilePoint(depth=depth,
+                                            timestamp=current_time,
+                                            consumption=configuration.consumption))
+
+            depth -= 3
+            current_time += dt.timedelta(minutes=3 / shallow_ascent_rate)
+            profile.append(DiveProfilePoint(depth=depth,
+                                            timestamp=current_time,
+                                            consumption=configuration.consumption))
+        return profile

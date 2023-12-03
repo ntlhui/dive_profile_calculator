@@ -1,0 +1,2 @@
+'''Computes consumption
+'''

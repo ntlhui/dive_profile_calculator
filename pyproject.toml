@@ -18,6 +18,8 @@ coverage = "^7.3.2"
 autopep8 = "^2.0.4"
 semantic-release = "^0.1.0"
 ipython = "^8.18.1"
+jupyter = "^1.0.0"
+matplotlib = "^3.8.2"
 
 [build-system]
 requires = ["poetry-core"]

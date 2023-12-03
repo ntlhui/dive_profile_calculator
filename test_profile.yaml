@@ -1,0 +1,15 @@
+gas_volume: 12
+gas_pressure: 232
+
+profile:
+  0:
+    depth: 0
+    consumption: 15
+
+  60:
+    depth: 10
+    consumption: 15
+  
+  120:
+    depth: 0
+    consumption: 15
